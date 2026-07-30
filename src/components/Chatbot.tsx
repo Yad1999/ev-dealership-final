@@ -37,7 +37,7 @@ export function Chatbot() {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
+        model: "gemini-3.5-flash",
         systemInstruction: "You are the official VoltMarket Virtual Assistant. You help customers find electric vehicles, understand charging options (like CCS, NACS), and locate deals. Keep your answers relatively concise, friendly, and helpful. You are a 24/7 AI."
       });
       chatSessionRef.current = model.startChat({
