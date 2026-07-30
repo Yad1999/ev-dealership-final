@@ -11,7 +11,6 @@ export function Footer() {
         {/* Brand & Copyright */}
         <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
           <Link to="/" className="flex items-center gap-2 group mb-4">
-            <Zap className="w-6 h-6 text-[#68E371]" />
             <span className="text-lg font-bold font-['Space_Grotesk'] text-[#F6F9FC]">
             BatteriVolt
             </span>
