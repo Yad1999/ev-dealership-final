@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag, Calculator, Zap } from 'lucide-react';
+import { Menu, X, ShoppingBag, Calculator } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
