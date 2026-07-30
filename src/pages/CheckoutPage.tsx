@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ChevronLeft, CreditCard, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ShieldCheck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useOrder } from '../context/OrderContext';
+import { useAuth } from '../context/AuthContext';
 
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const { cartItems, vehiclesAndUpgradesPrice, destinationFee, totalPrice, shippingAddress, clearCart, setLastOrder } = useCart();
+  const { cartItems, vehiclesAndUpgradesPrice, totalPrice, shippingAddress, clearCart, setLastOrder } = useCart();
+  const { addOrder } = useOrder();
+  const { currentUser } = useAuth();
   
-  const [useExistingAddress, setUseExistingAddress] = useState(true);
+  const [firstName, setFirstName] = useState(currentUser?.username || '');
+  const [lastName, setLastName] = useState('');
 
   // Mock VAT Calculation
   const subTotal = totalPrice;
@@ -25,17 +29,43 @@ export function CheckoutPage() {
     { id: 'paypass', name: 'Paypass', color: 'bg-emerald-500' },
   ];
 
-  const handleConfirmAndPay = (e: React.FormEvent) => {
+  const handleConfirmAndPay = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Save to CartContext for the confirmation page
     setLastOrder({
       items: cartItems,
       vehiclesAndUpgradesPrice,
-      destinationFee,
       totalPrice,
       shippingAddress,
     });
-    clearCart();
-    navigate('/order-confirmation');
+
+    if (currentUser) {
+      const orderPayload = {
+        address: {
+          street: shippingAddress?.street || '123 Test St',
+          city: shippingAddress?.city || 'Toronto',
+          province: shippingAddress?.province || 'Ontario',
+          country: shippingAddress?.country || 'Canada',
+          zip: shippingAddress?.zip || 'M5J 3A5',
+          phone: '416-555-5555'
+        },
+        fname: firstName,
+        lname: lastName,
+        finalPrice: finalTotal,
+        paymentMethod: paymentMethod === 'visa' ? 'Credit' : paymentMethod,
+      };
+
+      const success = await addOrder(orderPayload);
+      if (success) {
+        clearCart();
+        navigate('/order-confirmation');
+      } else {
+        alert("There was an issue processing your order.");
+      }
+    } else {
+      alert("Please log in to checkout.");
+    }
   };
 
   return (
@@ -76,44 +106,25 @@ export function CheckoutPage() {
               </div>
 
               <form id="payment-form" onSubmit={handleConfirmAndPay} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Full Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="Tom Hanks"
-                    className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Card Number</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
-                    <input 
-                      type="text" 
-                      placeholder="1234 1234 1234 1234"
-                      className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-11 pr-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
-                      required
-                    />
-                  </div>
-                </div>
-
                 <div className="flex gap-4">
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">CVV</label>
+                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">First Name</label>
                     <input 
                       type="text" 
-                      placeholder="199"
+                      placeholder="Tom"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
                       required
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Expiration</label>
+                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Last Name</label>
                     <input 
                       type="text" 
-                      placeholder="09/2025"
+                      placeholder="Hanks"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
                       required
                     />
@@ -155,12 +166,7 @@ export function CheckoutPage() {
                     <span>Vehicles & Upgrades</span>
                     <span className="text-[#F6F9FC] font-semibold">${vehiclesAndUpgradesPrice.toLocaleString()}</span>
                   </div>
-                  {destinationFee > 0 && (
-                    <div className="flex justify-between text-[#8F9AA4]">
-                      <span>Destination & Delivery Fee</span>
-                      <span className="text-[#F6F9FC] font-semibold">${destinationFee.toLocaleString()}</span>
-                    </div>
-                  )}
+
                   <div className="flex justify-between text-[#8F9AA4]">
                     <span>Sub Total</span>
                     <span className="text-[#F6F9FC] font-semibold">${subTotal.toLocaleString()}</span>
@@ -181,23 +187,10 @@ export function CheckoutPage() {
               {shippingAddress && (
                 <div className="mt-8">
                   <div className="flex items-center justify-between mb-3">
-                    <label className="text-sm font-medium text-[#F6F9FC]">Use Existing Address</label>
-                    <button 
-                      onClick={() => setUseExistingAddress(!useExistingAddress)}
-                      className={`w-12 h-6 rounded-full transition-colors relative ${useExistingAddress ? 'bg-[#68E371]' : 'bg-[#212A33]'}`}
-                    >
-                      <motion.div 
-                        className="w-4 h-4 bg-white rounded-full absolute top-1"
-                        initial={false}
-                        animate={{ left: useExistingAddress ? '26px' : '4px' }}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    </button>
+                    <label className="text-sm font-medium text-[#F6F9FC]">Shipping Address</label>
                   </div>
                   
-                  <div className={`p-4 rounded-xl border transition-colors ${
-                    useExistingAddress ? 'bg-[#14202D] border-[#212A33] text-[#F6F9FC]' : 'bg-[#0A121A] border-[#14202D] text-[#5A6E85]'
-                  }`}>
+                  <div className="p-4 rounded-xl border bg-[#14202D] border-[#212A33] text-[#F6F9FC] transition-colors">
                     <p className="text-sm">
                       {shippingAddress.street}, {shippingAddress.city}, {shippingAddress.province} {shippingAddress.zip}, {shippingAddress.country}
                     </p>

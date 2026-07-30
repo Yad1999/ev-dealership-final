@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content = "IE=edge"/>
+    <meta name="viewport" content = "width=device-width, initial-scale=1.0"/>
+    <title> Loan Calculator</title>
+    <link rel="stylesheet" href="loanCalc.css"/>
+</head>
+
+<body>
+<div class="glass">
+    <h1> Loan Calculator</h1>
+    <h2> Please enter the fields to calculate your loan payments</h2>
+
+<!--    FIELDSS    -->
+<!--    <p> Please enter the Price of the vehicle: </p>-->
+    <label> Please enter the price of the vehicle</label>
+    <div class="vehiclePrice">
+        <input
+            type="text"
+            id="vehiclePrice"
+            onkeydown="button"
+            placeholder="Enter here"/>
+    </div>
+
+    <br>
+    <label> Please enter the amount you put as Down Payment</label>
+    <div class="downPayment">
+        <input
+            type="text"
+            id="downPayment"
+            onkeydown="button"
+            placeholder="Enter here"/>
+    </div>
+     <br>
+    <label> Please enter your Loan Interest</label>
+    <div class="loanInterest">
+        <input
+            type="text"
+            id="loanInterest"
+            onkeydown="button"
+            placeholder="Enter here"/>
+    </div>
+
+     <br>
+    <label> Please enter the duration of your loan (in months)</label>
+    <div class="loanDur">
+        <input
+            type="text"
+            id="loanDur"
+            onkeydown="button"
+            placeholder="Enter here"/>
+
+    </div>
+    <br>
+    <button id="button" onclick="calculateLoan()"> Calculate Loan Payment</button>
+
+    <p id="Result"> Your monthly car payment is: </p>
+</div>
+<script src="loanCalc.js"></script>
+
+</body>
+</html>

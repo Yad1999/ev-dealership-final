@@ -6,33 +6,40 @@ import { useAuth } from '../context/AuthContext';
 export function AuthModal() {
   const { isAuthModalOpen, setIsAuthModalOpen, login, signup } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
   // Reset form when modal opens
   useEffect(() => {
     if (isAuthModalOpen) {
       setIsLogin(true);
-      setFirstName('');
-      setLastName('');
+      setUsername('');
       setEmail('');
       setPassword('');
+      setError('');
     }
   }, [isAuthModalOpen]);
 
   const onClose = () => setIsAuthModalOpen(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLogin) {
-      const success = login(email, password);
+      const success = await login(username, password);
       if (!success) {
-        alert('Invalid email or password.');
+        setError('Invalid username or password.');
+      } else {
+        setError('');
       }
     } else {
-      signup({ firstName, lastName, email, password });
+      const success = await signup({ username, email, password });
+      if (!success) {
+        setError('Failed to create account.');
+      } else {
+        setError('');
+      }
     }
   };
 
@@ -77,7 +84,10 @@ export function AuthModal() {
                   {isLogin ? "Don't have an account? " : "Already have an account? "}
                   <button
                     type="button"
-                    onClick={() => setIsLogin(!isLogin)}
+                    onClick={() => {
+                      setIsLogin(!isLogin);
+                      setError('');
+                    }}
                     className="text-[#68E371] hover:text-[#52c95b] font-medium transition-colors"
                   >
                     {isLogin ? 'Sign up' : 'Log in'}
@@ -85,51 +95,42 @@ export function AuthModal() {
                 </p>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {!isLogin && (
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">First name</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
-                        <input
-                          type="text"
-                          value={firstName}
-                          onChange={(e) => setFirstName(e.target.value)}
-                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
-                          required
-                        />
-                      </div>
-                    </div>
-                    <div className="flex-1">
-                      <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Last name</label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
-                        <input
-                          type="text"
-                          value={lastName}
-                          onChange={(e) => setLastName(e.target.value)}
-                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
+              {error && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center">
+                  <p className="text-red-400 text-sm font-medium">{error}</p>
+                </div>
+              )}
 
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Your email</label>
+                  <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Username</label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
                     <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
                       required
                     />
                   </div>
                 </div>
+
+                {!isLogin && (
+                  <div>
+                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Your email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
+                        required
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="flex justify-between items-center mb-1.5">

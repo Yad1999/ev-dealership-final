@@ -1,11 +1,11 @@
 import { useCart } from '../context/CartContext';
-import { X, Trash2, ShoppingBag, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
+import { X, Trash2, ShoppingBag, Plus, Minus, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 export function CartDrawer() {
-  const { cartItems, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, totalPrice, vehiclesAndUpgradesPrice, destinationFee, setIsCheckoutModalOpen } = useCart();
+  const { cartItems, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, totalPrice, vehiclesAndUpgradesPrice, setIsCheckoutModalOpen } = useCart();
   const { currentUser, setIsAuthModalOpen } = useAuth();
   const navigate = useNavigate();
 
@@ -93,7 +93,7 @@ export function CartDrawer() {
                             {item.brand} {item.model}
                           </h4>
                           <button
-                            onClick={() => removeFromCart(item.vin)}
+                            onClick={() => removeFromCart(item.cartItemId!)}
                             className="text-[#5A6E85] hover:text-red-400 p-1 transition-colors -mt-1 -mr-1"
                             title="Remove vehicle"
                           >
@@ -131,15 +131,16 @@ export function CartDrawer() {
                           {/* Quantity Controls */}
                           <div className="flex items-center gap-2 bg-[#0B151F] border border-[#212A33] rounded-lg px-2 py-1 text-xs">
                             <button
-                              onClick={() => updateQuantity(item.vin, -1)}
+                              onClick={() => updateQuantity(item.cartItemId!, -1)}
                               className="text-[#8F9AA4] hover:text-[#F6F9FC] transition-colors"
                             >
                               <Minus className="w-3 h-3" />
                             </button>
                             <span className="font-semibold text-[#F6F9FC] px-1">{item.quantity}</span>
                             <button
-                              onClick={() => updateQuantity(item.vin, 1)}
-                              className="text-[#8F9AA4] hover:text-[#F6F9FC] transition-colors"
+                              onClick={() => updateQuantity(item.cartItemId!, 1)}
+                              className="text-[#8F9AA4] hover:text-[#F6F9FC] transition-colors opacity-50 cursor-not-allowed"
+                              disabled
                             >
                               <Plus className="w-3 h-3" />
                             </button>
@@ -159,20 +160,12 @@ export function CartDrawer() {
                       <span>Vehicles & Upgrades</span>
                       <span className="text-[#F6F9FC]">${vehiclesAndUpgradesPrice.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-[#8F9AA4]">
-                      <span>Destination Fee</span>
-                      <span className="text-[#F6F9FC]">${destinationFee.toLocaleString()}</span>
-                    </div>
                     <div className="pt-2 border-t border-[#212A33] flex justify-between font-bold text-base text-[#F6F9FC]">
                       <span>Estimated Total</span>
                       <span>${totalPrice.toLocaleString()}</span>
                     </div>
                   </div>
 
-                  <div className="mb-4 bg-[#14202D] border border-[#212A33] rounded-xl p-3 flex justify-between items-center text-sm font-bold">
-                    <span className="text-[#F6F9FC]">Due Today</span>
-                    <span className="text-[#68E371]">${cartItems.length > 0 ? '500' : '0'}</span>
-                  </div>
 
                   <button
                     onClick={() => {
@@ -190,11 +183,7 @@ export function CartDrawer() {
                     <ArrowRight className="w-4 h-4" />
                   </button>
 
-                  <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-[#5A6E85]">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#68E371]" />
-                    <span>100% Fully Refundable Deposit Guarantee</span>
                   </div>
-                </div>
               )}
 
             </motion.div>

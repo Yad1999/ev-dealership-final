@@ -6,18 +6,21 @@ import { Home } from './pages/Home';
 import { Shop } from './pages/Shop';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { OrderProvider } from './context/OrderContext';
 import { CartDrawer } from './components/CartDrawer';
 import { AuthModal } from './components/AuthModal';
 import { CheckoutModal } from './components/CheckoutModal';
 import { CheckoutPage } from './pages/CheckoutPage';
 import { OrderConfirmationPage } from './pages/OrderConfirmationPage';
+import { OrderHistoryPage } from './pages/OrderHistoryPage';
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <CartProvider>
-          <div className="min-h-screen bg-[#040A11] font-sans selection:bg-[#68E371]/30 selection:text-white">
+        <OrderProvider>
+          <CartProvider>
+            <div className="min-h-screen bg-[#040A11] font-sans selection:bg-[#68E371]/30 selection:text-white">
             <Navbar />
             
             <main>
@@ -26,7 +29,7 @@ function App() {
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
                 <Route path="/order-confirmation" element={<OrderConfirmationPage />} />
-                <Route path="/order-details" element={<div className="min-h-screen flex items-center justify-center text-white">Order Details Page (Coming Soon)</div>} />
+                <Route path="/order-history" element={<OrderHistoryPage />} />
               </Routes>
             </main>
             
@@ -37,6 +40,7 @@ function App() {
             <CheckoutModal />
           </div>
         </CartProvider>
+        </OrderProvider>
       </AuthProvider>
     </BrowserRouter>
   );

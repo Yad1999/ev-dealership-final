@@ -1,94 +1,105 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, Zap, Gauge, Star } from 'lucide-react';
+import { Search, Zap, Star, Car, Activity } from 'lucide-react';
 import { VehicleDetailsModal } from '../components/VehicleDetailsModal';
+// removed useOrder
 
 import type { FrontendVehicle } from '../types';
 
-type Condition = 'all' | 'new' | 'used';
+type Condition = 'all' | 'new' | 'used' | 'discounted';
+type SortOrder = 'asc' | 'desc' | 'none';
 
-const mockVehicles: FrontendVehicle[] = [
-  {
-    vin: '11111111122', brand: 'TestBrand', model: 'TestModel', condition: 'new', basePrice: 46900, originalPrice: 52400,
-    range: 663, speed: 3.8, rating: 4.9, year: 2024, km: 0, horsePower: 200, description: 'This is a test car.',
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p1', name: 'Better Battery', description: 'This battery offers 3x performance', price: 1000 }, { id: 'p2', name: 'Premium Wheels', description: 'Sporty alloy wheels', price: 1500 }]
-  },
-  {
-    vin: '11111111123', brand: 'Volt', model: 'Sedan GT', condition: 'new', basePrice: 38200, originalPrice: 44900,
-    range: 576, speed: 2.9, rating: 4.8, year: 2024, km: 0, horsePower: 350, description: 'Sleek electric performance.',
-    image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p3', name: 'Carbon Fiber Trim', description: 'Lightweight interior trim', price: 800 }]
-  },
-  {
-    vin: '11111111124', brand: 'Micro', model: 'Bolt EV', condition: 'used', basePrice: 19750, originalPrice: 23000,
-    range: 354, speed: 6.5, rating: 4.7, year: 2023, km: 19000, horsePower: 150, description: 'Perfect city commuter.',
-    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80',
-    availableParts: []
-  },
-  {
-    vin: '11111111125', brand: 'Stellar', model: 'Model S', condition: 'used', basePrice: 55000, originalPrice: 85000,
-    range: 627, speed: 2.4, rating: 4.9, year: 2022, km: 50000, horsePower: 500, description: 'Luxury meets speed.',
-    image: 'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p4', name: 'Autopilot Plus', description: 'Enhanced autonomous driving', price: 3000 }]
-  },
-  {
-    vin: '11111111126', brand: 'Aero', model: 'Coupe', condition: 'new', basePrice: 41500,
-    range: 498, speed: 4.2, rating: 4.6, year: 2024, km: 0, horsePower: 280, description: 'Sporty aerodynamic design.',
-    image: 'https://images.unsplash.com/photo-1536700503339-1e4b06520771?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p5', name: 'Sport Suspension', description: 'Tighter cornering control', price: 1200 }]
-  },
-  {
-    vin: '11111111127', brand: 'Terra', model: 'Truck EV', condition: 'used', basePrice: 62000, originalPrice: 75000,
-    range: 514, speed: 4.5, rating: 4.8, year: 2024, km: 13600, horsePower: 450, description: 'Built for work and off-road.',
-    image: 'https://images.unsplash.com/photo-1612444646734-706bc32eb681?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p6', name: 'Tow Hitch', description: 'Class IV hitch receiver', price: 500 }, { id: 'p7', name: 'Bed Liner', description: 'Durable spray-in liner', price: 600 }]
-  },
-  {
-    vin: '11111111128', brand: 'Nimbus', model: 'City', condition: 'new', basePrice: 25000,
-    range: 402, speed: 5.8, rating: 4.5, year: 2024, km: 0, horsePower: 180, description: 'Compact and efficient.',
-    image: 'https://images.unsplash.com/photo-1620891549027-942fdc95d3f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: []
-  },
-  {
-    vin: '11111111129', brand: 'Eco', model: 'Van Max', condition: 'used', basePrice: 34000, originalPrice: 42000,
-    range: 450, speed: 6.0, rating: 4.3, year: 2021, km: 72400, horsePower: 220, description: 'Spacious electric cargo van.',
-    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p8', name: 'Roof Rack', description: 'Heavy duty cargo rack', price: 900 }]
-  },
-  {
-    vin: '11111111130', brand: 'Volt', model: 'Crossover', condition: 'new', basePrice: 39900,
-    range: 531, speed: 4.8, rating: 4.7, year: 2024, km: 0, horsePower: 260, description: 'Versatile family EV.',
-    image: 'https://images.unsplash.com/photo-1616423640778-28d1b53229bd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: []
-  },
-  {
-    vin: '11111111131', brand: 'Aurora', model: 'Sport', condition: 'used', basePrice: 29500, originalPrice: 38000,
-    range: 466, speed: 3.5, rating: 4.4, year: 2020, km: 83600, horsePower: 310, description: 'Affordable electric sports car.',
-    image: 'https://images.unsplash.com/photo-1554744512-d6c603f27c54?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: []
-  },
-  {
-    vin: '11111111132', brand: 'Vanguard', model: 'Elite', condition: 'new', basePrice: 89000,
-    range: 724, speed: 2.1, rating: 5.0, year: 2024, km: 0, horsePower: 650, description: 'Premium hyper EV.',
-    image: 'https://images.unsplash.com/photo-1614200187524-dc4b892acf16?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: [{ id: 'p9', name: 'Track Package', description: 'High-performance tires & brakes', price: 4500 }]
-  },
-  {
-    vin: '11111111133', brand: 'Ozone', model: 'Hatchback', condition: 'used', basePrice: 18000, originalPrice: 22000,
-    range: 289, speed: 7.2, rating: 4.1, year: 2019, km: 109000, horsePower: 130, description: 'Budget friendly commuter.',
-    image: 'https://images.unsplash.com/photo-1583121274602-3e2820c69888?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    availableParts: []
-  }
-];
+
 
 export function Shop() {
+  const [vehicles, setVehicles] = useState<FrontendVehicle[]>([]);
   const [selectedVehicle, setSelectedVehicle] = useState<FrontendVehicle | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const conditionQuery = searchParams.get('condition') as Condition | null;
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<Condition>(conditionQuery && ['new', 'used'].includes(conditionQuery) ? conditionQuery : 'all');
+  const [activeFilter, setActiveFilter] = useState<Condition>(conditionQuery && ['new', 'used', 'discounted'].includes(conditionQuery) ? conditionQuery : 'all');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('none');
+
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    let url = `${API_URL}/vehicle/search?`;
+    if (activeFilter === 'discounted') {
+      url += `onSale=true&`;
+    }
+    if (searchQuery) {
+      url += `keyword=${encodeURIComponent(searchQuery)}&`;
+    }
+    if (sortOrder === 'asc' || sortOrder === 'desc') {
+      url += `sortByPrice=${sortOrder}&`;
+    }
+
+    fetch(url)
+      .then(r => r.json())
+      .then(async (data: any[]) => {
+        const mappedPromises = data.map(async (v) => {
+          let avgRating = 0;
+          try {
+            const revRes = await fetch(`${API_URL}/vehicle/reviews/${v.id}`);
+            const revData = await revRes.json();
+            if (Array.isArray(revData) && revData.length > 0) {
+              avgRating = revData.reduce((acc: number, r: any) => acc + r.starRating, 0) / revData.length;
+            }
+          } catch (e) {
+            console.error(`Error fetching reviews for vehicle ${v.id}`, e);
+          }
+
+          let km = 0;
+          let condition: 'new' | 'used' = 'new';
+          try {
+            const invRes = await fetch(`${API_URL}/vehicle/inventory/${v.id}`);
+            const invData = await invRes.json();
+            if (Array.isArray(invData) && invData.length > 0) {
+              const usedItem = invData.find((inv: any) => inv.used && inv.mileage > 0);
+              if (usedItem) {
+                km = usedItem.mileage;
+                condition = 'used';
+              } else {
+                const itemWithMileage = invData.find((inv: any) => inv.mileage > 0);
+                if (itemWithMileage) {
+                  km = itemWithMileage.mileage;
+                }
+              }
+            }
+          } catch (e) {
+            console.error(`Error fetching inventory for vehicle ${v.id}`, e);
+          }
+
+          return {
+            id: v.id,
+            vin: String(v.id), // placeholder for selection
+            brand: v.brand,
+            model: v.model,
+            description: v.description,
+            year: parseInt(v.year) || 2024,
+            condition,
+            basePrice: v.discountedPrice || v.price,
+            originalPrice: v.discountPercent > 0 ? v.price : undefined,
+            rating: avgRating, 
+            image: v.vehicleimages?.find((img: any) => img.thumbnail)?.imageUrl || v.vehicleimages?.[0]?.imageUrl || '',
+            km,
+            horsePower: v.horsePower,
+            availableParts: []
+          };
+        });
+        
+        const mapped = await Promise.all(mappedPromises);
+
+        // Frontend filtering for new/used if needed (backend doesn't support it directly)
+        let filtered = mapped;
+        if (activeFilter === 'new') filtered = mapped.filter(v => v.condition === 'new');
+        if (activeFilter === 'used') filtered = mapped.filter(v => v.condition === 'used');
+
+        setVehicles(filtered);
+      })
+      .catch(console.error);
+  }, [searchQuery, activeFilter, sortOrder]);
 
   // Update URL and state when filter changes
   const handleFilterChange = (condition: Condition) => {
@@ -103,21 +114,14 @@ export function Shop() {
 
   // Sync state if URL changes directly
   useEffect(() => {
-    if (conditionQuery && ['new', 'used'].includes(conditionQuery)) {
+    if (conditionQuery && ['new', 'used', 'discounted'].includes(conditionQuery)) {
       setActiveFilter(conditionQuery);
     } else {
       setActiveFilter('all');
     }
   }, [conditionQuery]);
 
-  const filteredVehicles = useMemo(() => {
-    return mockVehicles.filter(v => {
-      const matchesSearch = v.brand.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            v.model.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCondition = activeFilter === 'all' || v.condition === activeFilter;
-      return matchesSearch && matchesCondition;
-    });
-  }, [searchQuery, activeFilter]);
+  const filteredVehicles = vehicles;
 
   return (
     <div className="min-h-screen bg-[#040A11] pt-28 pb-24 px-6 md:px-12 lg:px-24">
@@ -162,43 +166,89 @@ export function Shop() {
               >
                 Used EVs
               </button>
+              <button 
+                onClick={() => handleFilterChange('discounted')}
+                className={`flex-1 md:flex-none px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeFilter === 'discounted' ? 'bg-[#68E371] text-[#050C13]' : 'text-[#8D9CAE] hover:text-[#F6F9FC]'}`}
+              >
+                Discounted EVs
+              </button>
+            </div>
+          </div>
+
+          {/* Sorting Controls */}
+          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 bg-[#0B151F] p-4 rounded-2xl border border-[#212A33] mt-6">
+            <span className="text-[#F6F9FC] font-medium text-sm">Sort by Price:</span>
+            <div className="flex items-center gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceSort"
+                  value="asc"
+                  checked={sortOrder === 'asc'}
+                  onChange={() => setSortOrder('asc')}
+                  className="accent-[#68E371]"
+                />
+                <span className="text-[#8D9CAE] text-sm hover:text-[#F6F9FC] transition-colors">Ascending</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="priceSort"
+                  value="desc"
+                  checked={sortOrder === 'desc'}
+                  onChange={() => setSortOrder('desc')}
+                  className="accent-[#68E371]"
+                />
+                <span className="text-[#8D9CAE] text-sm hover:text-[#F6F9FC] transition-colors">Descending</span>
+              </label>
+              <button
+                onClick={() => setSortOrder('none')}
+                className="text-sm font-medium text-[#68E371] hover:text-[#52c95b] transition-colors flex items-center ml-2 border border-[#68E371]/30 hover:border-[#68E371] px-3 py-1 rounded-full"
+              >
+                Clear
+              </button>
             </div>
           </div>
         </div>
 
         {/* Vehicle Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredVehicles.map((vehicle) => (
-            <div key={vehicle.vin} className="group bg-[#0B151F] border border-[#212A33] rounded-2xl overflow-hidden hover:border-[#68E371] hover:-translate-y-1 hover:shadow-glow transition-all duration-300 flex flex-col">
-              
-              {/* Media Image Container */}
-              <div className="relative aspect-[4/3] bg-[#14202D] overflow-hidden">
-                <img 
-                  src={vehicle.image} 
-                  alt={`${vehicle.brand} ${vehicle.model}`}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                
-                {/* Badge Overlay */}
-                <div className="absolute top-4 left-4 bg-electric-gradient text-[#050C13] text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                  {vehicle.condition === 'new' ? 'New' : 'Used'}
-                </div>
-              </div>
+          {filteredVehicles.map((vehicle) => {
+            const averageRating = vehicle.rating;
 
-              {/* Card Body */}
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  {/* Title & Rating */}
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-display text-xl font-bold text-[#F6F9FC] group-hover:text-[#68E371] transition-colors line-clamp-1">
-                      {vehicle.brand} {vehicle.model}
-                    </h3>
-                    <div className="flex items-center gap-1 text-sm font-semibold text-[#8F9AA4]">
-                      <Star className="w-4 h-4 text-[#68E371] fill-[#68E371]" />
-                      <span>{vehicle.rating}</span>
-                    </div>
+            return (
+              <div key={vehicle.vin} className="group bg-[#0B151F] border border-[#212A33] rounded-2xl overflow-hidden hover:border-[#68E371] hover:-translate-y-1 hover:shadow-glow transition-all duration-300 flex flex-col">
+                
+                {/* Media Image Container */}
+                <div className="relative aspect-[4/3] bg-[#14202D] overflow-hidden">
+                  <img 
+                    src={vehicle.image} 
+                    alt={`${vehicle.brand} ${vehicle.model}`}
+                    loading="lazy"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  
+                  {/* Badge Overlay */}
+                  <div className="absolute top-4 left-4 bg-electric-gradient text-[#050C13] text-xs font-bold px-3 py-1 rounded-full shadow-md">
+                    {vehicle.condition === 'new' ? 'New' : 'Used'}
                   </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-6 flex-1 flex flex-col justify-between">
+                  <div>
+                    {/* Title & Rating */}
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-display text-xl font-bold text-[#F6F9FC] group-hover:text-[#68E371] transition-colors line-clamp-1">
+                        {vehicle.brand} {vehicle.model}
+                      </h3>
+                      <div className="flex items-center gap-1 text-sm font-semibold text-[#8F9AA4]">
+                        <Star className={`w-4 h-4 ${averageRating > 0 ? 'text-[#68E371] fill-[#68E371]' : 'text-[#8F9AA4]'}`} />
+                        <span className={averageRating > 0 ? 'text-[#F6F9FC]' : ''}>
+                          {averageRating > 0 ? averageRating.toFixed(1) : '0'}
+                        </span>
+                      </div>
+                    </div>
                   
                   {/* Subtitle */}
                   <p className="text-sm text-[#8F9AA4] mt-1">
@@ -206,14 +256,18 @@ export function Shop() {
                   </p>
 
                   {/* Specs Row */}
-                  <div className="mt-4 pt-4 border-t border-[#212A33]/60 flex items-center gap-4 text-xs text-[#8F9AA4]">
+                  <div className="mt-4 pt-4 border-t border-[#212A33]/60 flex flex-wrap items-center gap-4 text-xs text-[#8F9AA4]">
                     <div className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-[#68E371]" />
-                      <span>{vehicle.range} km range</span>
+                      <Car className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{vehicle.brand}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Gauge className="w-3.5 h-3.5 text-[#68E371]" />
-                      <span>{vehicle.speed}s 0-100 km/h</span>
+                      <Zap className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{vehicle.horsePower} HP</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{vehicle.km.toLocaleString()} km</span>
                     </div>
                   </div>
                 </div>
@@ -239,7 +293,8 @@ export function Shop() {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Empty State */}

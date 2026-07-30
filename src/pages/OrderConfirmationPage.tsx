@@ -1,10 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, ShoppingBag, FileText } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 
 export function OrderConfirmationPage() {
-  const navigate = useNavigate();
   const { lastOrder } = useCart();
 
   return (
@@ -61,12 +60,7 @@ export function OrderConfirmationPage() {
                 <span>Vehicles & Upgrades</span>
                 <span className="text-[#F6F9FC] font-semibold">${lastOrder.vehiclesAndUpgradesPrice.toLocaleString()}</span>
               </div>
-              {lastOrder.destinationFee > 0 && (
-                <div className="flex justify-between">
-                  <span>Destination Fee</span>
-                  <span className="text-[#F6F9FC] font-semibold">${lastOrder.destinationFee.toLocaleString()}</span>
-                </div>
-              )}
+
               <div className="flex justify-between text-sm font-bold text-[#F6F9FC] pt-1 border-t border-[#212A33]">
                 <span>Total Paid</span>
                 <span className="text-[#68E371]">${lastOrder.totalPrice.toLocaleString()}</span>
@@ -76,21 +70,21 @@ export function OrderConfirmationPage() {
         )}
 
         <div className="space-y-3">
-          <button
-            onClick={() => navigate('/shop')}
+          <Link
+            to="/shop"
             className="w-full bg-[#68E371] hover:bg-[#52c95b] text-[#050C13] font-bold py-3.5 rounded-xl transition-all duration-200 shadow-[0_0_20px_rgba(104,227,113,0.15)] flex items-center justify-center gap-2"
           >
             <ShoppingBag className="w-5 h-5" />
             Continue Shopping
-          </button>
+          </Link>
           
-          <button
-            onClick={() => navigate('/order-details')}
+          <Link
+            to="/order-history"
             className="w-full bg-[#14202D] hover:bg-[#212A33] text-[#F6F9FC] font-bold py-3.5 rounded-xl transition-colors flex items-center justify-center gap-2 border border-[#212A33]"
           >
             <FileText className="w-5 h-5" />
             View Order Details
-          </button>
+          </Link>
         </div>
       </motion.div>
     </div>

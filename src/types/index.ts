@@ -6,6 +6,7 @@ export interface CustomPart {
 }
 
 export interface FrontendVehicle {
+  id: number;
   vin: string; // unique identifier from vehicle_inventory
   brand: string; // from vehicle_model
   model: string; // from vehicle_model
@@ -14,8 +15,6 @@ export interface FrontendVehicle {
   condition: 'new' | 'used'; // derived from is_used in vehicle_inventory
   basePrice: number; // price in vehicle_model
   originalPrice?: number; // if discounted
-  range: number | string; // mapped for UI
-  speed: number | string; // mapped for UI
   rating: number; // from vehicle_reviews
   image: string; // from vehicle_image
   km: number; // mileage from vehicle_inventory
@@ -25,9 +24,8 @@ export interface FrontendVehicle {
 
 export interface User {
   id: string;
-  firstName: string; // type in order screen only
-  lastName: string; // type in order screen only
-  email: string;
+  username: string; // from users table
+  email: string; // from users table
   password?: string;
 }
 
@@ -38,4 +36,34 @@ export interface ShippingAddress {
   country: string;
   zip: string;
   phone: string;
+}
+
+export interface Review {
+  id: string;
+  userId: string;
+  vehicleModel: string; // e.g., "Micro Bolt EV"
+  rating: number;
+  text: string;
+  createdAt: string;
+}
+
+export interface OrderItem {
+  vehicleModelId: number;
+  vin: string;
+  brand: string;
+  model: string;
+  year: number;
+  image: string;
+  basePrice: number;
+  quantity: number;
+  selectedParts: CustomPart[];
+}
+
+export interface Order {
+  id: string;
+  userId: string;
+  datePlaced: string;
+  totalAmount: number;
+  status: 'Processing' | 'In Production' | 'In Transit' | 'Delivered';
+  items: OrderItem[];
 }

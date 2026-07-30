@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Zap, Gauge, Star, ArrowRight } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Zap, Star, ArrowRight, Car, Activity } from 'lucide-react';
 import { VehicleDetailsModal } from './VehicleDetailsModal';
+// removed useOrder
 
 import type { FrontendVehicle } from '../types';
 
@@ -8,65 +9,75 @@ export type Deal = FrontendVehicle & {
   tag: string;
 };
 
-const dealsData: Deal[] = [
-  {
-    vin: '11111111122',
-    brand: 'TestBrand',
-    model: 'TestModel',
-    image: 'https://images.unsplash.com/photo-1617788138017-80ad40651399?auto=format&fit=crop&w=800&q=80',
-    tag: 'Hot Deal',
-    year: 2024,
-    condition: 'new',
-    basePrice: 46900,
-    originalPrice: 52400,
-    range: 663,
-    speed: 3.8,
-    rating: 4.9,
-    km: 0,
-    horsePower: 200,
-    description: 'This is a test car.',
-    availableParts: [{ id: 'p1', name: 'Better Battery', description: 'This battery offers 3x performance', price: 1000 }, { id: 'p2', name: 'Premium Wheels', description: 'Sporty alloy wheels', price: 1500 }]
-  },
-  {
-    vin: '11111111123',
-    brand: 'Volt',
-    model: 'Sedan GT',
-    image: 'https://images.unsplash.com/photo-1560958089-b8a1929cea89?auto=format&fit=crop&w=800&q=80',
-    tag: "Editor's Pick",
-    year: 2024,
-    condition: 'new',
-    basePrice: 38200,
-    originalPrice: 44900,
-    range: 576,
-    speed: 2.9,
-    rating: 4.8,
-    km: 0,
-    horsePower: 350,
-    description: 'Sleek electric performance.',
-    availableParts: [{ id: 'p3', name: 'Carbon Fiber Trim', description: 'Lightweight interior trim', price: 800 }]
-  },
-  {
-    vin: '11111111124',
-    brand: 'Micro',
-    model: 'Bolt EV',
-    image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?auto=format&fit=crop&w=800&q=80',
-    tag: 'Best Value',
-    year: 2023,
-    condition: 'used',
-    basePrice: 19750,
-    originalPrice: 23000,
-    range: 354,
-    speed: 6.5,
-    rating: 4.7,
-    km: 19000,
-    horsePower: 150,
-    description: 'Perfect city commuter.',
-    availableParts: []
-  },
-];
+
 
 export const Deals = () => {
+  const [dealsData, setDealsData] = useState<Deal[]>([]);
   const [selectedDeal, setSelectedDeal] = useState<FrontendVehicle | null>(null);
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  useEffect(() => {
+    fetch(`${API_URL}/vehicle/search?onSale=true`)
+      .then(r => r.json())
+      .then(async (data: any[]) => {
+        const tags = ['Hot Deal', "Editor's Pick", 'Best Value'];
+        const mappedPromises = data.slice(0, 3).map(async (v, idx) => {
+          let avgRating = 0;
+          try {
+            const revRes = await fetch(`${API_URL}/vehicle/reviews/${v.id}`);
+            const reviews = await revRes.json();
+            if (reviews.length > 0) {
+              avgRating = reviews.reduce((acc: number, r: any) => acc + r.starRating, 0) / reviews.length;
+            }
+          } catch (e) {
+            console.error(`Error fetching reviews for vehicle ${v.id}`, e);
+          }
+
+          let km = 0;
+          let condition: 'new' | 'used' = 'new';
+          try {
+            const invRes = await fetch(`${API_URL}/vehicle/inventory/${v.id}`);
+            const invData = await invRes.json();
+            if (Array.isArray(invData) && invData.length > 0) {
+              const usedItem = invData.find((inv: any) => inv.used && inv.mileage > 0);
+              if (usedItem) {
+                km = usedItem.mileage;
+                condition = 'used';
+              } else {
+                const itemWithMileage = invData.find((inv: any) => inv.mileage > 0);
+                if (itemWithMileage) {
+                  km = itemWithMileage.mileage;
+                }
+              }
+            }
+          } catch (e) {
+            console.error(`Error fetching inventory for vehicle ${v.id}`, e);
+          }
+
+          return {
+            id: v.id,
+            vin: String(v.id),
+            brand: v.brand,
+            model: v.model,
+            description: v.description,
+            year: parseInt(v.year) || 2024,
+            condition,
+            basePrice: v.discountedPrice || v.price,
+            originalPrice: v.discountPercent > 0 ? v.price : undefined,
+            rating: avgRating,
+            image: v.vehicleimages?.find((img: any) => img.thumbnail)?.imageUrl || v.vehicleimages?.[0]?.imageUrl || '',
+            km,
+            horsePower: v.horsePower,
+            availableParts: [],
+            tag: tags[idx % tags.length]
+          } as Deal;
+        });
+        
+        const mapped = await Promise.all(mappedPromises);
+        setDealsData(mapped);
+      })
+      .catch(console.error);
+  }, []);
 
   return (
     <section id="deals" className="py-20 md:py-24 border-t border-[#212A33]/50 bg-[#040A11]">
@@ -90,7 +101,10 @@ export const Deals = () => {
 
         {/* Deals Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {dealsData.map((deal) => (
+          {dealsData.map((deal) => {
+            const averageRating = deal.rating;
+
+            return (
             <div
               key={deal.vin}
               className="group bg-[#0B151F] border border-[#212A33] rounded-2xl overflow-hidden hover:border-[#68E371] hover:-translate-y-1 hover:shadow-glow transition-all duration-300 flex flex-col"
@@ -119,8 +133,10 @@ export const Deals = () => {
                       {deal.brand} {deal.model}
                     </h3>
                     <div className="flex items-center gap-1 text-sm font-semibold text-[#8F9AA4]">
-                      <Star className="w-4 h-4 fill-[#68E371] text-[#68E371]" />
-                      <span>{deal.rating}</span>
+                      <Star className={`w-4 h-4 ${averageRating > 0 ? 'text-[#68E371] fill-[#68E371]' : 'text-[#8F9AA4]'}`} />
+                      <span className={averageRating > 0 ? 'text-[#F6F9FC]' : ''}>
+                        {averageRating > 0 ? averageRating.toFixed(1) : '0'}
+                      </span>
                     </div>
                   </div>
 
@@ -128,14 +144,18 @@ export const Deals = () => {
                   <p className="text-sm text-[#8F9AA4] mt-1">{deal.year} &middot; {deal.condition === 'new' ? 'New' : 'Used'}</p>
 
                   {/* Specs Row */}
-                  <div className="mt-4 pt-4 border-t border-[#212A33]/60 flex items-center gap-4 text-xs text-[#8F9AA4]">
+                  <div className="mt-4 pt-4 border-t border-[#212A33]/60 flex flex-wrap items-center gap-4 text-xs text-[#8F9AA4]">
                     <div className="flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-[#68E371]" />
-                      <span>{deal.range} km range</span>
+                      <Car className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{deal.brand}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <Gauge className="w-3.5 h-3.5 text-[#68E371]" />
-                      <span>{deal.speed}s 0-100 km/h</span>
+                      <Zap className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{deal.horsePower} HP</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Activity className="w-3.5 h-3.5 text-[#68E371]" />
+                      <span>{deal.km.toLocaleString()} km</span>
                     </div>
                   </div>
                 </div>
@@ -162,7 +182,8 @@ export const Deals = () => {
                 </div>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

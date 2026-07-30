@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Menu, X, ShoppingBag } from 'lucide-react';
+import { Menu, X, ShoppingBag, Calculator } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { LoanCalculatorModal } from './LoanCalculatorModal';
 
 export const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isLoanCalcOpen, setIsLoanCalcOpen] = useState(false);
   const { cartCount, setIsCartOpen } = useCart();
   const { currentUser, logout, setIsAuthModalOpen } = useAuth();
   const location = useLocation();
@@ -28,6 +30,10 @@ export const Navbar = () => {
     { name: 'Chargers', href: '/#chargers' },
     { name: 'About', href: '/#about' },
   ];
+
+  if (currentUser) {
+    navLinks.push({ name: 'Order History', href: '/order-history' });
+  }
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href.startsWith('/#')) {
@@ -91,6 +97,16 @@ export const Navbar = () => {
 
           {/* Right CTA Buttons & Mobile Toggle */}
           <div className="flex items-center gap-3 md:gap-4">
+            {/* Loan Calculator Button */}
+            <button
+              onClick={() => setIsLoanCalcOpen(true)}
+              className="bg-white/10 hover:bg-white/20 text-white p-2.5 rounded-full border border-white/20 backdrop-blur-md transition-all duration-200 shadow-sm flex items-center justify-center group"
+              aria-label="Open Loan Calculator"
+              title="Loan Calculator"
+            >
+              <Calculator className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+            </button>
+
             {/* Shopping Cart Button */}
             <button
               onClick={() => setIsCartOpen(true)}
@@ -157,6 +173,12 @@ export const Navbar = () => {
           </div>
         )}
       </header>
+
+      {/* Loan Calculator Modal */}
+      <LoanCalculatorModal
+        isOpen={isLoanCalcOpen}
+        onClose={() => setIsLoanCalcOpen(false)}
+      />
     </>
   );
 };

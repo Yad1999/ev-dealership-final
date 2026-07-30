@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, Star, Zap, Gauge, ShoppingBag, Info, Plus, Check } from 'lucide-react';
+import { X, Star, Zap, ShoppingBag, Info, Plus, Check, Car, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCart } from '../context/CartContext';
+// Removed unused useOrder import
 import type { FrontendVehicle, CustomPart } from '../types';
 
 export type VehicleDetail = FrontendVehicle;
@@ -14,12 +15,59 @@ interface VehicleDetailsModalProps {
 
 export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetailsModalProps) {
   const { addToCart, setIsCartOpen } = useCart();
+  
   const [selectedParts, setSelectedParts] = useState<CustomPart[]>([]);
+  const [availableParts, setAvailableParts] = useState<CustomPart[]>([]);
+  const [vehicleReviews, setVehicleReviews] = useState<any[]>([]);
+  const [vehicleInventory, setVehicleInventory] = useState<any[]>([]);
+  const [averageRating, setAverageRating] = useState(0);
 
-  // Reset selected parts when modal opens/closes or vehicle changes
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  const activeInventoryItem = vehicleInventory.find(inv => inv.mileage > 0) || vehicleInventory.find(inv => inv.available) || vehicleInventory[0];
+  const displayedKm = activeInventoryItem?.mileage || vehicle?.km || 0;
+  const isUsedVehicle = activeInventoryItem?.used ?? (vehicle?.condition === 'used');
+
+  // Reset selected parts and fetch new data when modal opens/closes or vehicle changes
   useEffect(() => {
     setSelectedParts([]);
-  }, [isOpen, vehicle]);
+    
+    if (isOpen && vehicle) {
+      // fetch parts
+      fetch(`${API_URL}/vehicle/parts/${vehicle.id}`)
+        .then(r => r.json())
+        .then(data => {
+          const parts = data.map((p: any) => ({
+            id: String(p.id),
+            name: p.name,
+            description: p.description,
+            price: p.partPrice
+          }));
+          setAvailableParts(parts);
+        })
+        .catch(console.error);
+
+      // fetch reviews
+      fetch(`${API_URL}/vehicle/reviews/${vehicle.id}`)
+        .then(r => r.json())
+        .then(data => {
+          setVehicleReviews(data);
+          if (data.length > 0) {
+            const avg = data.reduce((acc: number, r: any) => acc + r.starRating, 0) / data.length;
+            setAverageRating(avg);
+          } else {
+            setAverageRating(0);
+          }
+        })
+        .catch(console.error);
+
+      // fetch inventory
+      fetch(`${API_URL}/vehicle/inventory/${vehicle.id}`)
+        .then(r => r.json())
+        .then(setVehicleInventory)
+        .catch(console.error);
+    }
+  }, [isOpen, vehicle, API_URL]);
 
   const togglePart = (part: CustomPart) => {
     setSelectedParts((current) => 
@@ -31,9 +79,19 @@ export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetails
 
   const handleAddToCart = () => {
     if (vehicle) {
+      // Find an available inventory item
+      const availableVin = vehicleInventory.find(inv => inv.available)?.vin;
+      
+      if (!availableVin) {
+        alert("Sorry, this vehicle is out of stock!");
+        return;
+      }
+
       addToCart({
         ...vehicle,
-        selectedParts
+        vin: availableVin, // assign real vin from backend
+        selectedParts,
+        availableParts
       });
       onClose();
       setIsCartOpen(true);
@@ -42,7 +100,7 @@ export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetails
 
   const totalCustomizationPrice = selectedParts.reduce((sum, part) => sum + part.price, 0);
   const estimatedTotal = (vehicle?.basePrice || 0) + totalCustomizationPrice;
-
+  
   return (
     <AnimatePresence>
       {isOpen && vehicle && (
@@ -98,12 +156,14 @@ export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetails
                       {vehicle.description} &middot; {vehicle.horsePower} HP
                     </p>
                     <p className="text-xs text-[#8F9AA4] mt-1">
-                      VIN: {vehicle.vin} &middot; {vehicle.year} &middot; {vehicle.condition === 'used' ? `${vehicle.km.toLocaleString()} km` : 'New Model'}
+                      VIN: {activeInventoryItem?.vin || vehicle.vin} &middot; {vehicle.year} &middot; {isUsedVehicle ? `${displayedKm.toLocaleString()} km` : 'New Model'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 text-sm font-semibold bg-[#14202D] px-3 py-1.5 rounded-lg border border-[#212A33]">
-                    <Star className="w-4 h-4 text-[#68E371] fill-[#68E371]" />
-                    <span className="text-[#F6F9FC]">{vehicle.rating}</span>
+                    <Star className={`w-4 h-4 ${averageRating > 0 ? 'text-[#68E371] fill-[#68E371]' : 'text-[#8F9AA4]'}`} />
+                    <span className="text-[#F6F9FC]">
+                      {averageRating > 0 ? averageRating.toFixed(1) : '0'}
+                    </span>
                   </div>
                 </div>
 
@@ -125,26 +185,31 @@ export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetails
                 {/* Key Specs */}
                 <div className="space-y-4 mb-8">
                   <h3 className="text-sm font-bold text-[#F6F9FC] uppercase tracking-wider">Key Specifications</h3>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="p-4 bg-[#0A121A] rounded-xl border border-[#212A33] flex flex-col items-center text-center">
-                      <Zap className="w-6 h-6 text-[#68E371] mb-2" />
-                      <span className="text-lg font-bold text-[#F6F9FC]">{vehicle.range} {typeof vehicle.range === 'number' ? 'km' : ''}</span>
-                      <span className="text-xs text-[#8F9AA4]">Est. Range</span>
+                      <Car className="w-6 h-6 text-[#68E371] mb-2" />
+                      <span className="text-lg font-bold text-[#F6F9FC] truncate max-w-[100px] md:max-w-full" title={vehicle.brand}>{vehicle.brand}</span>
+                      <span className="text-xs text-[#8F9AA4]">Brand</span>
                     </div>
                     <div className="p-4 bg-[#0A121A] rounded-xl border border-[#212A33] flex flex-col items-center text-center">
-                      <Gauge className="w-6 h-6 text-[#68E371] mb-2" />
-                      <span className="text-lg font-bold text-[#F6F9FC]">{vehicle.speed}{typeof vehicle.speed === 'number' ? 's' : ''}</span>
-                      <span className="text-xs text-[#8F9AA4]">0-100 km/h</span>
+                      <Zap className="w-6 h-6 text-[#68E371] mb-2" />
+                      <span className="text-lg font-bold text-[#F6F9FC]">{vehicle.horsePower} HP</span>
+                      <span className="text-xs text-[#8F9AA4]">Horsepower</span>
+                    </div>
+                    <div className="p-4 bg-[#0A121A] rounded-xl border border-[#212A33] flex flex-col items-center text-center">
+                      <Activity className="w-6 h-6 text-[#68E371] mb-2" />
+                      <span className="text-lg font-bold text-[#F6F9FC]">{displayedKm > 0 ? `${displayedKm.toLocaleString()} km` : '0 km'}</span>
+                      <span className="text-xs text-[#8F9AA4]">Mileage</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Customizations */}
-                {vehicle.availableParts && vehicle.availableParts.length > 0 && (
+                {availableParts && availableParts.length > 0 && (
                   <div className="space-y-4 mb-8">
                     <h3 className="text-sm font-bold text-[#F6F9FC] uppercase tracking-wider">Customizations</h3>
                     <div className="space-y-3">
-                      {vehicle.availableParts.map((part) => {
+                      {availableParts.map((part) => {
                         const isSelected = selectedParts.some(p => p.id === part.id);
                         return (
                           <button
@@ -179,6 +244,50 @@ export function VehicleDetailsModal({ isOpen, onClose, vehicle }: VehicleDetails
                     </div>
                   </div>
                 )}
+
+                {/* Reviews */}
+                <div className="space-y-4 mb-8">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-[#F6F9FC] uppercase tracking-wider">Customer Reviews</h3>
+                    <span className="text-xs text-[#8F9AA4] bg-[#14202D] px-2 py-1 rounded-md border border-[#212A33]">
+                      {vehicleReviews.length} {vehicleReviews.length === 1 ? 'Review' : 'Reviews'}
+                    </span>
+                  </div>
+                  
+                  {vehicleReviews.length === 0 ? (
+                    <div className="text-center p-6 bg-[#0A121A] rounded-xl border border-[#212A33]">
+                      <Star className="w-8 h-8 text-[#212A33] mx-auto mb-2" />
+                      <p className="text-sm text-[#8F9AA4]">No reviews yet for this model.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {vehicleReviews.map(review => {
+                        const ratingValue = review.starRating ?? review.rating ?? 0;
+                        const textValue = review.description ?? review.text ?? review.reviewText ?? '';
+                        const dateValue = review.reviewDate ?? review.createdAt ?? new Date().toISOString();
+                        
+                        return (
+                          <div key={review.id} className="p-4 bg-[#0A121A] rounded-xl border border-[#212A33]">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex gap-1">
+                                {[1, 2, 3, 4, 5].map(star => (
+                                  <Star 
+                                    key={star} 
+                                    className={`w-3.5 h-3.5 ${star <= ratingValue ? 'fill-[#68E371] text-[#68E371]' : 'text-[#212A33]'}`} 
+                                  />
+                                ))}
+                              </div>
+                              <span className="text-[10px] text-[#8F9AA4] uppercase tracking-wider">
+                                {new Date(dateValue).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="text-sm text-[#F6F9FC] italic">"{textValue}"</p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
                 
                 {/* Information Callout */}
                 <div className="flex gap-3 p-4 bg-[#68E371]/10 rounded-xl border border-[#68E371]/20">
