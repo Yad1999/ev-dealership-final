@@ -130,7 +130,7 @@ export function Shop() {
         {/* Header & Controls */}
         <div className="mb-12">
           <h1 className="font-display text-4xl md:text-5xl font-bold tracking-tight text-[#F6F9FC] mb-8">
-            Shop <span className="text-gradient">VoltMarket</span>
+            Shop <span className="text-gradient">BatteriVolt</span>
           </h1>
           
           <div className="flex flex-col md:flex-row gap-6 justify-between items-center bg-[#0B151F] p-4 rounded-2xl border border-[#212A33]">

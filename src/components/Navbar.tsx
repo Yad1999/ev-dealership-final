@@ -73,12 +73,11 @@ export const Navbar = () => {
       >
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           {/* Brand Title */}
-          <Link 
-            to="/" 
-            onClick={handleBrandClick}
-            className="font-display font-bold text-xl text-white tracking-tight hover:opacity-90 transition-opacity"
-          >
-            VoltMarket
+          <Link to="/" onClick={handleBrandClick} className="flex items-center gap-2 group mr-auto md:mr-0 z-[110]">
+            <Zap className="w-8 h-8 text-[#68E371] transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12" />
+            <span className="text-xl font-bold font-['Space_Grotesk'] text-[#F6F9FC] tracking-tight group-hover:text-white transition-colors">
+            BatteriVolt
+            </span>
           </Link>
 
           {/* Desktop Navigation Links */}

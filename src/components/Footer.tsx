@@ -7,12 +7,14 @@ export function Footer() {
 
         {/* Brand & Copyright */}
         <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
-          <span className="font-bold text-base text-[#F6F9FC] font-['Space_Grotesk'] tracking-tight">
-            VoltMarket
-          </span>
-          <span className="hidden sm:inline text-[#1a2634]">|</span>
+          <Link to="/" className="flex items-center gap-2 group mb-4">
+            <Zap className="w-6 h-6 text-[#68E371]" />
+            <span className="text-lg font-bold font-['Space_Grotesk'] text-[#F6F9FC]">
+            BatteriVolt
+            </span>
+          </Link>
           <p className="text-sm text-[#8D9CAE]">
-            &copy; {currentYear} VoltMarket
+            &copy; {currentYear} BatteriVolt. All rights reserved.
           </p>
         </div>
 

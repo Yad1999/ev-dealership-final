@@ -14,7 +14,7 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-msg',
-      text: "Hi there! I'm your 24/7 VoltMarket assistant. How can I help you today?",
+      text: "Hi there! I'm your 24/7 BatteriVolt assistant. How can I help you today?",
       sender: 'assistant',
       timestamp: new Date(),
     }
@@ -38,7 +38,7 @@ export function Chatbot() {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
         model: "gemini-3.5-flash-lite",
-        systemInstruction: "You are the official VoltMarket Virtual Assistant. You help customers find electric vehicles, understand charging options (like CCS, NACS), and locate deals. Keep your answers relatively concise, friendly, and helpful. You are a 24/7 AI."
+        systemInstruction: "You are the official BatteriVolt Virtual Assistant. You help customers find electric vehicles, understand charging options (like CCS, NACS), and locate deals. Keep your answers relatively concise, friendly, and helpful. You are a 24/7 AI."
       });
       chatSessionRef.current = model.startChat({
         history: [],
@@ -126,7 +126,7 @@ export function Chatbot() {
               <Bot className="w-4 h-4 text-[#050C13] fill-[#050C13]" />
             </div>
             <div>
-              <h3 className="font-bold text-sm text-[#F6F9FC] font-['Space_Grotesk']">VoltMarket Assistant</h3>
+              <h3 className="font-bold text-sm text-[#F6F9FC] font-['Space_Grotesk']">BatteriVolt Assistant</h3>
               <div className="flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#68E371] animate-pulse"></span>
                 <span className="text-xs text-[#8D9CAE]">Powered by Gemini</span>
