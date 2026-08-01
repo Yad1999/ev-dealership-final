@@ -61,9 +61,16 @@ export function OrderConfirmationPage() {
                 <span className="text-[#F6F9FC] font-semibold">${lastOrder.vehiclesAndUpgradesPrice.toLocaleString()}</span>
               </div>
 
+              {lastOrder.taxes !== undefined && (
+                <div className="flex justify-between">
+                  <span>Taxes (15%)</span>
+                  <span className="text-[#F6F9FC] font-semibold">${lastOrder.taxes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                </div>
+              )}
+
               <div className="flex justify-between text-sm font-bold text-[#F6F9FC] pt-1 border-t border-[#212A33]">
                 <span>Total Paid</span>
-                <span className="text-[#68E371]">${lastOrder.totalPrice.toLocaleString()}</span>
+                <span className="text-[#68E371]">${lastOrder.totalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
               </div>
             </div>
           </div>

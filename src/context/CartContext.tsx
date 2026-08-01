@@ -13,6 +13,8 @@ export interface CartItem extends FrontendVehicle {
 export interface CompletedOrder {
   items: CartItem[];
   vehiclesAndUpgradesPrice: number;
+  subTotal?: number;
+  taxes?: number;
   totalPrice: number;
   shippingAddress: ShippingAddress | null;
 }

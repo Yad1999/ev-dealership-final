@@ -96,7 +96,7 @@ export function OrderHistoryPage() {
                     </div>
                     <div>
                       <p className="text-[#8F9AA4] font-semibold mb-1 uppercase text-xs tracking-wider">Total Amount</p>
-                      <p className="text-[#F6F9FC] font-bold">${order.totalAmount.toLocaleString()}</p>
+                      <p className="text-[#F6F9FC] font-bold">${typeof order.totalAmount === 'number' ? order.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : order.totalAmount}</p>
                     </div>
                     <div>
                       <p className="text-[#8F9AA4] font-semibold mb-1 uppercase text-xs tracking-wider">Order #</p>

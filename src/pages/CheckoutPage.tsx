@@ -14,10 +14,10 @@ export function CheckoutPage() {
   const [firstName, setFirstName] = useState(currentUser?.username || '');
   const [lastName, setLastName] = useState('');
 
-  // Mock VAT Calculation
+  // 15% Taxes Calculation
   const subTotal = totalPrice;
-  const vat = 0; // Flat 0% for now
-  const finalTotal = subTotal + vat;
+  const taxes = subTotal * 0.15;
+  const finalTotal = subTotal + taxes;
 
   const [paymentMethod, setPaymentMethod] = useState('visa');
 
@@ -36,7 +36,9 @@ export function CheckoutPage() {
     setLastOrder({
       items: cartItems,
       vehiclesAndUpgradesPrice,
-      totalPrice,
+      subTotal,
+      taxes,
+      totalPrice: finalTotal,
       shippingAddress,
     });
 
@@ -52,7 +54,7 @@ export function CheckoutPage() {
         },
         fname: firstName,
         lname: lastName,
-        finalPrice: finalTotal,
+        finalPrice: Number(finalTotal.toFixed(2)),
         paymentMethod: paymentMethod === 'visa' ? 'Credit' : paymentMethod,
       };
 
@@ -172,15 +174,15 @@ export function CheckoutPage() {
                     <span className="text-[#F6F9FC] font-semibold">${subTotal.toLocaleString()}</span>
                   </div>
                   <div className="flex justify-between text-[#8F9AA4]">
-                    <span>VAT</span>
-                    <span className="text-[#F6F9FC] font-semibold">${vat.toLocaleString()}</span>
+                    <span>Taxes (15%)</span>
+                    <span className="text-[#F6F9FC] font-semibold">${taxes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
 
                 <div className="h-px bg-[#212A33] my-4" />
                 <div className="flex justify-between text-[#F6F9FC] text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-[#68E371]">${finalTotal.toLocaleString()}</span>
+                  <span className="text-[#68E371]">${finalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
