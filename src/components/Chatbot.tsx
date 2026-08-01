@@ -1,12 +1,104 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, Bot, User } from 'lucide-react';
-import { GoogleGenerativeAI, ChatSession } from '@google/generative-ai';
+import { GoogleGenerativeAI, ChatSession, SchemaType, type FunctionDeclaration } from '@google/generative-ai';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'assistant';
   timestamp: Date;
+}
+
+// Function declaration for Open Charge Map charger finder
+const findChargersDeclaration: FunctionDeclaration = {
+  name: "findChargersNearLocation",
+  description: "Find real electric vehicle (EV) charging stations near a given city, province/state, address, or postal code using the website's Open Charge Map integration.",
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      location: {
+        type: SchemaType.STRING,
+        description: "The city name, state/province, postal/zip code, or address to find EV chargers for (e.g. 'Toronto', 'New York', 'Montreal', 'San Francisco', 'M5J 3A5', '94105').",
+      },
+      radiusKm: {
+        type: SchemaType.NUMBER,
+        description: "Optional search radius in kilometers (default: 30km).",
+      },
+    },
+    required: ["location"],
+  },
+};
+
+// Helper to geocode and fetch live Open Charge Map stations
+async function searchChargersHelper(location: string, radiusKm: number = 30) {
+  const apiKey = import.meta.env.VITE_OPENCHARGEMAP_API_KEY;
+  try {
+    // 1. Geocode location with OpenStreetMap Nominatim
+    const geoRes = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location.trim())}`
+    );
+    const geoData = await geoRes.json();
+
+    if (!geoData || geoData.length === 0) {
+      return {
+        success: false,
+        location,
+        message: `Could not determine geographic coordinates for "${location}". Please provide a recognized city, postal code, or address.`
+      };
+    }
+
+    const lat = parseFloat(geoData[0].lat);
+    const lng = parseFloat(geoData[0].lon);
+    const resolvedName = geoData[0].display_name.split(',').slice(0, 2).join(', ');
+
+    // 2. Query Open Charge Map API
+    const ocmUrl = apiKey
+      ? `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lng}&distance=${radiusKm}&distanceunit=KM&maxresults=5&key=${apiKey}`
+      : `https://api.openchargemap.io/v3/poi/?output=json&latitude=${lat}&longitude=${lng}&distance=${radiusKm}&distanceunit=KM&maxresults=5`;
+
+    const ocmRes = await fetch(ocmUrl);
+    if (!ocmRes.ok) {
+      throw new Error(`Open Charge Map API returned status ${ocmRes.status}`);
+    }
+
+    const data = await ocmRes.json();
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return {
+        success: true,
+        location: resolvedName,
+        chargersCount: 0,
+        message: `No public EV chargers found within ${radiusKm}km of ${resolvedName}.`
+      };
+    }
+
+    const stations = data.slice(0, 4).map((item: any) => ({
+      name: item.AddressInfo?.Title || 'EV Charging Station',
+      address: item.AddressInfo?.AddressLine1 || 'Address not listed',
+      town: item.AddressInfo?.Town || '',
+      stateOrProvince: item.AddressInfo?.StateOrProvince || '',
+      distanceKm: item.AddressInfo?.Distance ? parseFloat(item.AddressInfo.Distance.toFixed(1)) : undefined,
+      connectors: (item.Connections || []).map((conn: any) => ({
+        type: conn.ConnectionType?.Title || 'Standard Connector',
+        powerKW: conn.PowerKW ? `${conn.PowerKW} kW` : 'Standard Speed',
+        level: conn.Level?.Title || ''
+      }))
+    }));
+
+    return {
+      success: true,
+      location: resolvedName,
+      chargersCount: stations.length,
+      searchRadiusKm: radiusKm,
+      stations
+    };
+  } catch (err: any) {
+    console.error("Error in searchChargersHelper:", err);
+    return {
+      success: false,
+      location,
+      error: err.message || "Failed to retrieve charging stations."
+    };
+  }
 }
 
 function FormattedMessage({ content }: { content: string }) {
@@ -69,7 +161,7 @@ export function Chatbot() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-msg',
-      text: "👋 Hi there! I'm your 24/7 BatteriVolt assistant ⚡. How can I help you find your dream electric vehicle today? 🚗",
+      text: "👋 Hi there! I'm your 24/7 BatteriVolt assistant ⚡. How can I help you find your dream electric vehicle or locate nearby EV chargers today? 🚗🔌",
       sender: 'assistant',
       timestamp: new Date(),
     }
@@ -93,15 +185,21 @@ export function Chatbot() {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
         model: "gemini-3.5-flash-lite",
-        systemInstruction: `You are the friendly, enthusiastic BatteriVolt Virtual Assistant ⚡. 
-You help customers find electric vehicles 🚗, understand charging options (like CCS, NACS, Supercharging) 🔌, discover special deals 🏷️, and learn about sustainable electric driving 🌱.
+        systemInstruction: `You are the friendly, knowledgeable BatteriVolt Virtual Assistant ⚡. 
+You help customers find electric vehicles 🚗, locate live electric vehicle charging stations (CCS, NACS, Level 2) 🔌, explore deals 🏷️, and learn about sustainable electric mobility 🌱.
+
+Tool Calling for EV Chargers:
+- Whenever a user asks for chargers, charging stations, plugs, or places to charge near a city, town, zip/postal code, or address, ALWAYS call the findChargersNearLocation tool.
+- Summarize the found charging stations with station name 📍, address, plug types & speeds 🔌, and approximate distance.
+- Mention to the user that they can also check the interactive Volt Chargers map section right on our website!
 
 Communication & Formatting Guidelines:
-- Write in a friendly, natural, and human tone with conversational warmth.
-- Use helpful emojis (⚡, 🚗, 🔋, 🔌, 📍, 💡, ✨, 🏷️, 👍, 🏁) naturally to make messages engaging and visually appealing.
-- Avoid raw markdown syntax like asterisks (* or **), hashes (###), or slashes (/) for bullets. Use emojis or clear line breaks instead.
-- Keep answers concise, helpful, and easily scannable with short paragraphs.
-- You are a 24/7 AI ready to help anytime!`
+- Write in a friendly, conversational tone with warmth.
+- Use helpful emojis (⚡, 🚗, 🔋, 🔌, 📍, 💡, ✨, 🏷️, 👍, 🏁) naturally to make messages easy and pleasant to read.
+- Do NOT use raw markdown formatting like asterisks (* or **), hashes (###), or slashes (/) for bullets. Use emojis and natural paragraphs instead.
+- Keep answers concise, helpful, and scannable.
+- You are a 24/7 AI ready to help anytime!`,
+        tools: [{ functionDeclarations: [findChargersDeclaration] }]
       });
       chatSessionRef.current = model.startChat({
         history: [],
@@ -142,7 +240,30 @@ Communication & Formatting Guidelines:
         throw new Error("Chat session not initialized");
       }
       
-      const result = await chatSessionRef.current.sendMessage(userText);
+      let result = await chatSessionRef.current.sendMessage(userText);
+      let functionCalls = result.response.functionCalls();
+
+      // Process any function call requests from Gemini (e.g. Open Charge Map lookup)
+      while (functionCalls && functionCalls.length > 0) {
+        const call = functionCalls[0];
+        if (call.name === "findChargersNearLocation") {
+          const args = call.args as { location: string; radiusKm?: number };
+          const chargerData = await searchChargersHelper(args.location, args.radiusKm || 30);
+          
+          result = await chatSessionRef.current.sendMessage([
+            {
+              functionResponse: {
+                name: "findChargersNearLocation",
+                response: chargerData,
+              },
+            },
+          ]);
+          functionCalls = result.response.functionCalls();
+        } else {
+          break;
+        }
+      }
+
       const responseText = result.response.text();
       
       const botMessage: Message = {
