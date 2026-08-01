@@ -9,12 +9,67 @@ interface Message {
   timestamp: Date;
 }
 
+function FormattedMessage({ content }: { content: string }) {
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-1.5 leading-relaxed text-sm">
+      {lines.map((line, lineIndex) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          return <div key={lineIndex} className="h-1" />;
+        }
+
+        // Check if line is a list/bullet item
+        const isBullet = /^[\*\-\•]\s+/.test(trimmed) || /^\d+[\.\)]\s+/.test(trimmed);
+        const cleanLine = trimmed
+          .replace(/^#+\s*/, '') // remove markdown header hashes
+          .replace(/^[\*\-\•]\s+/, '') // remove bullet chars
+          .replace(/^\d+[\.\)]\s+/, ''); // remove numbered list prefix
+
+        // Helper to format inline bold text (**text** or *text*)
+        const formatInline = (text: string) => {
+          const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+          return parts.map((part, i) => {
+            if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+              return (
+                <strong key={i} className="font-semibold text-[#68E371]">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+              return (
+                <span key={i} className="font-medium text-[#F6F9FC]">
+                  {part.slice(1, -1)}
+                </span>
+              );
+            }
+            return part;
+          });
+        };
+
+        if (isBullet) {
+          return (
+            <div key={lineIndex} className="flex items-start gap-2 pl-1 py-0.5">
+              <span className="text-[#68E371] text-xs mt-0.5 select-none shrink-0">⚡</span>
+              <div className="flex-1">{formatInline(cleanLine)}</div>
+            </div>
+          );
+        }
+
+        return <p key={lineIndex}>{formatInline(trimmed)}</p>;
+      })}
+    </div>
+  );
+}
+
 export function Chatbot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome-msg',
-      text: "Hi there! I'm your 24/7 BatteriVolt assistant. How can I help you today?",
+      text: "👋 Hi there! I'm your 24/7 BatteriVolt assistant ⚡. How can I help you find your dream electric vehicle today? 🚗",
       sender: 'assistant',
       timestamp: new Date(),
     }
@@ -38,7 +93,15 @@ export function Chatbot() {
       const genAI = new GoogleGenerativeAI(apiKey);
       const model = genAI.getGenerativeModel({ 
         model: "gemini-3.5-flash-lite",
-        systemInstruction: "You are the official BatteriVolt Virtual Assistant. You help customers find electric vehicles, understand charging options (like CCS, NACS), and locate deals. Keep your answers relatively concise, friendly, and helpful. You are a 24/7 AI."
+        systemInstruction: `You are the friendly, enthusiastic BatteriVolt Virtual Assistant ⚡. 
+You help customers find electric vehicles 🚗, understand charging options (like CCS, NACS, Supercharging) 🔌, discover special deals 🏷️, and learn about sustainable electric driving 🌱.
+
+Communication & Formatting Guidelines:
+- Write in a friendly, natural, and human tone with conversational warmth.
+- Use helpful emojis (⚡, 🚗, 🔋, 🔌, 📍, 💡, ✨, 🏷️, 👍, 🏁) naturally to make messages engaging and visually appealing.
+- Avoid raw markdown syntax like asterisks (* or **), hashes (###), or slashes (/) for bullets. Use emojis or clear line breaks instead.
+- Keep answers concise, helpful, and easily scannable with short paragraphs.
+- You are a 24/7 AI ready to help anytime!`
       });
       chatSessionRef.current = model.startChat({
         history: [],
@@ -160,13 +223,17 @@ export function Chatbot() {
                 </div>
                 
                 {/* Bubble */}
-                <div className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                <div className={`p-3.5 rounded-2xl text-sm leading-relaxed ${
                   msg.sender === 'user' 
-                    ? 'bg-[#68E371] text-[#050C13] rounded-tr-sm' 
-                    : 'bg-[#14202D] text-[#F6F9FC] border border-[#1a2634] rounded-tl-sm'
+                    ? 'bg-[#68E371] text-[#050C13] rounded-tr-sm font-medium' 
+                    : 'bg-[#14202D] text-[#F6F9FC] border border-[#1a2634] rounded-tl-sm shadow-sm'
                 }`}>
-                  {msg.text}
-                  <div className={`text-[10px] mt-1 text-right ${msg.sender === 'user' ? 'text-[#050C13]/70' : 'text-[#5A6E85]'}`}>
+                  {msg.sender === 'user' ? (
+                    <p className="whitespace-pre-wrap">{msg.text}</p>
+                  ) : (
+                    <FormattedMessage content={msg.text} />
+                  )}
+                  <div className={`text-[10px] mt-1.5 text-right ${msg.sender === 'user' ? 'text-[#050C13]/70' : 'text-[#5A6E85]'}`}>
                     {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
