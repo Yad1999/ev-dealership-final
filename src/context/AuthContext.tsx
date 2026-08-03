@@ -2,10 +2,15 @@ import { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '../types';
 
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+}
+
 interface AuthContextType {
   currentUser: User | null;
-  login: (username: string, password?: string) => Promise<boolean>;
-  signup: (user: Omit<User, 'id'>) => Promise<boolean>;
+  login: (username: string, password?: string) => Promise<AuthResponse>;
+  signup: (user: Omit<User, 'id'>) => Promise<AuthResponse>;
   logout: () => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
@@ -18,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL;
 
-  const login = async (username: string, password?: string) => {
+  const login = async (username: string, password?: string): Promise<AuthResponse> => {
     try {
       const response = await fetch(`${API_URL}/user/login`, {
         method: 'POST',
@@ -30,42 +35,92 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.ok) {
         const text = await response.text();
-        if (!text) return false;
+        if (!text) return { success: false, message: 'Empty response from server.' };
         
-        const user = JSON.parse(text);
-        if (user && user.id) {
-          setCurrentUser(user);
-          setIsAuthModalOpen(false);
-          return true;
+        try {
+          const user = JSON.parse(text);
+          if (user && (user.id || user.username)) {
+            setCurrentUser(user);
+            setIsAuthModalOpen(false);
+            return { success: true };
+          }
+        } catch {
+          if (text.toLowerCase().includes('success')) {
+            setCurrentUser({ id: '1', username, email: '' });
+            setIsAuthModalOpen(false);
+            return { success: true };
+          }
         }
       }
-      return false;
-    } catch (e) {
+      return { success: false, message: 'Invalid username or password.' };
+    } catch (e: any) {
       console.error('Login error', e);
-      return false;
+      return { success: false, message: e?.message || 'Server connection error.' };
     }
   };
 
-  const signup = async (newUser: Omit<User, 'id'>) => {
+  const signup = async (newUser: Omit<User, 'id'>): Promise<AuthResponse> => {
     try {
+      const payload = {
+        email: newUser.email,
+        password: newUser.password,
+        username: newUser.username,
+        fname: newUser.fname || '',
+        lname: newUser.lname || '',
+        address: {
+          street: newUser.address?.street || '',
+          city: newUser.address?.city || '',
+          province: newUser.address?.province || '',
+          country: newUser.address?.country || '',
+          zip: newUser.address?.zip || '',
+          phone: newUser.address?.phone || '',
+        }
+      };
+
       const response = await fetch(`${API_URL}/user/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newUser),
+        body: JSON.stringify(payload),
       });
       
+      const responseText = await response.text();
+
       if (response.ok) {
-        const msg = await response.text();
-        if (msg.toLowerCase().includes('success')) {
-          return await login(newUser.username, newUser.password);
+        // If response is valid JSON user
+        try {
+          const user = JSON.parse(responseText);
+          if (user && (user.id || user.username)) {
+            setCurrentUser(user);
+            setIsAuthModalOpen(false);
+            return { success: true };
+          }
+        } catch {
+          // not JSON, continue to login
         }
+
+        // Auto-login after signup
+        const loginRes = await login(newUser.username, newUser.password);
+        if (loginRes.success) {
+          return { success: true };
+        }
+        return { success: true };
+      } else {
+        let errorMsg = 'Failed to create account.';
+        try {
+          const errData = JSON.parse(responseText);
+          errorMsg = errData.message || errData.error || responseText || errorMsg;
+        } catch {
+          if (responseText && responseText.length < 150) {
+            errorMsg = responseText;
+          }
+        }
+        return { success: false, message: errorMsg };
       }
-      return false;
-    } catch (e) {
+    } catch (e: any) {
       console.error('Signup error', e);
-      return false;
+      return { success: false, message: e?.message || 'Network error connecting to backend.' };
     }
   };
 

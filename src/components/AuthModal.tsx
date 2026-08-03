@@ -42,34 +42,31 @@ export function AuthModal() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
     if (isLogin) {
-      const success = await login(username, password);
-      if (!success) {
-        setError('Invalid username or password.');
-      } else {
-        setError('');
+      const res = await login(username, password);
+      if (!res.success) {
+        setError(res.message || 'Invalid username or password.');
       }
     } else {
-      const hasAddress = street || city || province || country || zip || phone;
-      const success = await signup({
+      const res = await signup({
         username,
         email,
         password,
-        fname: fname.trim() || undefined,
-        lname: lname.trim() || undefined,
-        address: hasAddress ? {
+        fname: fname.trim(),
+        lname: lname.trim(),
+        address: {
           street: street.trim(),
           city: city.trim(),
           province: province.trim(),
           country: country.trim(),
           zip: zip.trim(),
           phone: phone.trim()
-        } : undefined
+        }
       });
-      if (!success) {
-        setError('Failed to create account.');
-      } else {
-        setError('');
+      if (!res.success) {
+        setError(res.message || 'Failed to create account.');
       }
     }
   };
