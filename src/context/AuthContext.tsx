@@ -52,6 +52,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         }
       }
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        return { success: false, message: `Backend server is temporarily unreachable (${response.status} Bad Gateway).` };
+      }
       return { success: false, message: 'Invalid username or password.' };
     } catch (e: any) {
       console.error('Login error', e);
@@ -108,12 +111,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true };
       } else {
         let errorMsg = 'Failed to create account.';
-        try {
-          const errData = JSON.parse(responseText);
-          errorMsg = errData.message || errData.error || responseText || errorMsg;
-        } catch {
-          if (responseText && responseText.length < 150) {
-            errorMsg = responseText;
+        if (response.status === 502 || response.status === 503 || response.status === 504) {
+          errorMsg = `Backend server is temporarily unreachable (${response.status} Bad Gateway). Please verify that the backend application is running.`;
+        } else if (response.status >= 500) {
+          errorMsg = `Internal server error (${response.status}). Please check backend logs.`;
+        } else {
+          try {
+            const errData = JSON.parse(responseText);
+            errorMsg = errData.message || errData.error || responseText || errorMsg;
+          } catch {
+            if (responseText && !responseText.includes('<html') && responseText.length < 150) {
+              errorMsg = responseText;
+            }
           }
         }
         return { success: false, message: errorMsg };
