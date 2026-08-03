@@ -92,7 +92,11 @@ export function OrderHistoryPage() {
                   <div className="flex gap-8 md:gap-12 text-sm">
                     <div>
                       <p className="text-[#8F9AA4] font-semibold mb-1 uppercase text-xs tracking-wider">Order Placed</p>
-                      <p className="text-[#F6F9FC] font-bold">{order.datePlaced}</p>
+                      <p className="text-[#F6F9FC] font-bold">
+                        {order.datePlaced && order.datePlaced !== 'Unknown Date' 
+                          ? order.datePlaced 
+                          : new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                      </p>
                     </div>
                     <div>
                       <p className="text-[#8F9AA4] font-semibold mb-1 uppercase text-xs tracking-wider">Total Amount</p>
