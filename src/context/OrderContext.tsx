@@ -13,6 +13,29 @@ interface OrderContextType {
 
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
+const ORDER_DATES_KEY = 'batterivolt_order_dates';
+
+const getSavedOrderDates = (): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(ORDER_DATES_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveOrderDate = (orderId: string, formattedDate: string) => {
+  try {
+    const dates = getSavedOrderDates();
+    if (!dates[orderId]) {
+      dates[orderId] = formattedDate;
+      localStorage.setItem(ORDER_DATES_KEY, JSON.stringify(dates));
+    }
+  } catch (e) {
+    console.error('Failed to save order date', e);
+  }
+};
+
 export function OrderProvider({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -31,32 +54,46 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       const data = await r.json();
       
       if (data && Array.isArray(data)) {
-        const mappedOrders = data.map((o: any) => ({
-          id: o.id.toString(),
-          userId: currentUser.id,
-          datePlaced: o.orderDate ? new Date(o.orderDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Unknown Date',
-          totalAmount: o.finalPrice,
-          status: o.status,
-          items: o.customizedVehicle.map((cv: any) => {
-            const vModel = cv.vehicleInventory.vehicleModel;
-            return {
-              vehicleModelId: vModel.id,
-              vin: cv.vehicleInventory.vin,
-              brand: vModel.brand,
-              model: vModel.model,
-              year: parseInt(vModel.year) || 2024,
-              image: vModel.vehicleimages?.find((img: any) => img.thumbnail)?.imageUrl || vModel.vehicleimages?.[0]?.imageUrl || '',
-              basePrice: vModel.discountedPrice || vModel.price,
-              quantity: 1,
-              selectedParts: cv.vehicleCustomParts.map((p: any) => ({
-                id: String(p.id),
-                name: p.name,
-                description: p.description,
-                price: p.partPrice
-              }))
-            };
-          })
-        }));
+        const savedDates = getSavedOrderDates();
+        const currentDateFormatted = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+        const mappedOrders = data.map((o: any) => {
+          const orderId = o.id.toString();
+          let datePlaced = o.orderDate 
+            ? new Date(o.orderDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+            : (savedDates[orderId] || currentDateFormatted);
+
+          if (!savedDates[orderId]) {
+            saveOrderDate(orderId, datePlaced);
+          }
+
+          return {
+            id: orderId,
+            userId: currentUser.id,
+            datePlaced,
+            totalAmount: o.finalPrice,
+            status: o.status,
+            items: (o.customizedVehicle || []).map((cv: any) => {
+              const vModel = cv.vehicleInventory?.vehicleModel || {};
+              return {
+                vehicleModelId: vModel.id,
+                vin: cv.vehicleInventory?.vin || '',
+                brand: vModel.brand || 'Vehicle',
+                model: vModel.model || '',
+                year: parseInt(vModel.year) || 2024,
+                image: vModel.vehicleimages?.find((img: any) => img.thumbnail)?.imageUrl || vModel.vehicleimages?.[0]?.imageUrl || '',
+                basePrice: vModel.discountedPrice || vModel.price || 0,
+                quantity: 1,
+                selectedParts: (cv.vehicleCustomParts || []).map((p: any) => ({
+                  id: String(p.id),
+                  name: p.name,
+                  description: p.description,
+                  price: p.partPrice
+                }))
+              };
+            })
+          };
+        });
         setOrders(mappedOrders);
       }
     } catch (e) {
