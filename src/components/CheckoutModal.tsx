@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { X, MapPin, Phone, Building2, Map, Globe, Hash } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, MapPin, Phone, Building2, Map, Globe, Hash, Check, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 export function CheckoutModal() {
-  const { setIsCartOpen, isCheckoutModalOpen, setIsCheckoutModalOpen, setShippingAddress } = useCart();
+  const { setIsCartOpen, isCheckoutModalOpen, setIsCheckoutModalOpen, shippingAddress, setShippingAddress } = useCart();
+  const { currentUser } = useAuth();
   const navigate = useNavigate();
   
   const onClose = () => setIsCheckoutModalOpen(false);
@@ -17,6 +19,39 @@ export function CheckoutModal() {
   const [zip, setZip] = useState('');
   const [phone, setPhone] = useState('');
 
+  // Pre-fill input fields with user's account address or current shipping address on open
+  useEffect(() => {
+    if (isCheckoutModalOpen) {
+      const activeAddress = shippingAddress || currentUser?.address;
+      if (activeAddress) {
+        setStreet(activeAddress.street || '');
+        setCity(activeAddress.city || '');
+        setProvince(activeAddress.province || '');
+        setCountry(activeAddress.country || '');
+        setZip(activeAddress.zip || '');
+        setPhone(activeAddress.phone || '');
+      } else {
+        setStreet('');
+        setCity('');
+        setProvince('');
+        setCountry('');
+        setZip('');
+        setPhone('');
+      }
+    }
+  }, [isCheckoutModalOpen, currentUser, shippingAddress]);
+
+  const handleUseAccountAddress = () => {
+    if (currentUser?.address) {
+      setStreet(currentUser.address.street || '');
+      setCity(currentUser.address.city || '');
+      setProvince(currentUser.address.province || '');
+      setCountry(currentUser.address.country || '');
+      setZip(currentUser.address.zip || '');
+      setPhone(currentUser.address.phone || '');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShippingAddress({ street, city, province, country, zip, phone });
@@ -24,6 +59,10 @@ export function CheckoutModal() {
     onClose();
     navigate('/checkout');
   };
+
+  const hasAccountAddress = Boolean(
+    currentUser?.address?.street || currentUser?.address?.city
+  );
 
   return (
     <AnimatePresence>
@@ -45,7 +84,7 @@ export function CheckoutModal() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-lg bg-[#0B151F] border border-[#212A33] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className="relative w-full max-w-lg max-h-[90vh] bg-[#0B151F] border border-[#212A33] rounded-3xl shadow-2xl overflow-y-auto flex flex-col"
           >
             {/* Close Button */}
             <button 
@@ -62,9 +101,33 @@ export function CheckoutModal() {
                   Shipping Details
                 </h2>
                 <p className="text-[#8F9AA4] text-sm">
-                  Please provide your delivery address to complete the checkout.
+                  Review or update your delivery address for this order.
                 </p>
               </div>
+
+              {hasAccountAddress && (
+                <div className="mb-5 p-3.5 bg-[#14202D] border border-[#212A33] rounded-2xl flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-lg bg-[#68E371]/10 flex items-center justify-center text-[#68E371] shrink-0">
+                      <Check className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-[#F6F9FC] truncate">Account Address Loaded</p>
+                      <p className="text-[11px] text-[#8F9AA4] truncate">
+                        {currentUser?.address?.street}, {currentUser?.address?.city}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleUseAccountAddress}
+                    className="flex items-center gap-1 text-xs font-medium text-[#68E371] hover:text-[#52c95b] transition-colors shrink-0 px-2.5 py-1 rounded-lg bg-[#0B151F] border border-[#212A33]"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset
+                  </button>
+                </div>
+              )}
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>

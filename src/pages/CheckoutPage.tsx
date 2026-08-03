@@ -1,18 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShieldCheck } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, Edit3 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useOrder } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 
 export function CheckoutPage() {
   const navigate = useNavigate();
-  const { cartItems, vehiclesAndUpgradesPrice, totalPrice, shippingAddress, clearCart, setLastOrder } = useCart();
+  const { cartItems, vehiclesAndUpgradesPrice, totalPrice, shippingAddress, setIsCheckoutModalOpen, clearCart, setLastOrder } = useCart();
   const { addOrder } = useOrder();
   const { currentUser } = useAuth();
   
-  const [firstName, setFirstName] = useState(currentUser?.username || '');
-  const [lastName, setLastName] = useState('');
+  const [firstName, setFirstName] = useState(currentUser?.fname || currentUser?.username || '');
+  const [lastName, setLastName] = useState(currentUser?.lname || '');
+
+  useEffect(() => {
+    if (currentUser) {
+      if (!firstName) setFirstName(currentUser.fname || currentUser.username || '');
+      if (!lastName && currentUser.lname) setLastName(currentUser.lname);
+    }
+  }, [currentUser]);
+
+  const activeAddress = shippingAddress || currentUser?.address;
 
   // 15% Taxes Calculation
   const subTotal = totalPrice;
@@ -39,21 +48,21 @@ export function CheckoutPage() {
       subTotal,
       taxes,
       totalPrice: finalTotal,
-      shippingAddress,
+      shippingAddress: activeAddress || null,
     });
 
     if (currentUser) {
       const orderPayload = {
         address: {
-          street: shippingAddress?.street || '123 Test St',
-          city: shippingAddress?.city || 'Toronto',
-          province: shippingAddress?.province || 'Ontario',
-          country: shippingAddress?.country || 'Canada',
-          zip: shippingAddress?.zip || 'M5J 3A5',
-          phone: '416-555-5555'
+          street: activeAddress?.street || '123 Test St',
+          city: activeAddress?.city || 'Toronto',
+          province: activeAddress?.province || 'Ontario',
+          country: activeAddress?.country || 'Canada',
+          zip: activeAddress?.zip || 'M5J 3A5',
+          phone: activeAddress?.phone || '416-555-5555'
         },
-        fname: firstName,
-        lname: lastName,
+        fname: firstName || currentUser.fname || currentUser.username || 'Customer',
+        lname: lastName || currentUser.lname || '',
         finalPrice: Number(finalTotal.toFixed(2)),
         paymentMethod: paymentMethod === 'visa' ? 'Credit' : paymentMethod,
       };
@@ -113,7 +122,7 @@ export function CheckoutPage() {
                     <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">First Name</label>
                     <input 
                       type="text" 
-                      placeholder="Tom"
+                      placeholder="Jane"
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
@@ -124,7 +133,7 @@ export function CheckoutPage() {
                     <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Last Name</label>
                     <input 
                       type="text" 
-                      placeholder="Hanks"
+                      placeholder="Doe"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
@@ -186,16 +195,29 @@ export function CheckoutPage() {
                 </div>
               </div>
 
-              {shippingAddress && (
+              {activeAddress && (
                 <div className="mt-8">
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-sm font-medium text-[#F6F9FC]">Shipping Address</label>
+                    <button
+                      type="button"
+                      onClick={() => setIsCheckoutModalOpen(true)}
+                      className="flex items-center gap-1 text-xs text-[#68E371] hover:text-[#52c95b] transition-colors font-medium"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      Edit
+                    </button>
                   </div>
                   
                   <div className="p-4 rounded-xl border bg-[#14202D] border-[#212A33] text-[#F6F9FC] transition-colors">
                     <p className="text-sm">
-                      {shippingAddress.street}, {shippingAddress.city}, {shippingAddress.province} {shippingAddress.zip}, {shippingAddress.country}
+                      {activeAddress.street}, {activeAddress.city}, {activeAddress.province} {activeAddress.zip}, {activeAddress.country}
                     </p>
+                    {activeAddress.phone && (
+                      <p className="text-xs text-[#8F9AA4] mt-1">
+                        Phone: {activeAddress.phone}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

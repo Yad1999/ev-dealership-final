@@ -27,6 +27,9 @@ export interface User {
   username: string; // from users table
   email: string; // from users table
   password?: string;
+  fname?: string;
+  lname?: string;
+  address?: ShippingAddress;
 }
 
 export interface ShippingAddress {

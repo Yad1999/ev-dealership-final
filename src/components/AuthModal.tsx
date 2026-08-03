@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Mail, Lock, User } from 'lucide-react';
+import { X, Mail, Lock, User, MapPin, Building2, Map, Globe, Hash, Phone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,6 +9,14 @@ export function AuthModal() {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fname, setFname] = useState('');
+  const [lname, setLname] = useState('');
+  const [street, setStreet] = useState('');
+  const [city, setCity] = useState('');
+  const [province, setProvince] = useState('');
+  const [country, setCountry] = useState('');
+  const [zip, setZip] = useState('');
+  const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
 
   // Reset form when modal opens
@@ -18,6 +26,14 @@ export function AuthModal() {
       setUsername('');
       setEmail('');
       setPassword('');
+      setFname('');
+      setLname('');
+      setStreet('');
+      setCity('');
+      setProvince('');
+      setCountry('');
+      setZip('');
+      setPhone('');
       setError('');
     }
   }, [isAuthModalOpen]);
@@ -34,7 +50,22 @@ export function AuthModal() {
         setError('');
       }
     } else {
-      const success = await signup({ username, email, password });
+      const hasAddress = street || city || province || country || zip || phone;
+      const success = await signup({
+        username,
+        email,
+        password,
+        fname: fname.trim() || undefined,
+        lname: lname.trim() || undefined,
+        address: hasAddress ? {
+          street: street.trim(),
+          city: city.trim(),
+          province: province.trim(),
+          country: country.trim(),
+          zip: zip.trim(),
+          phone: phone.trim()
+        } : undefined
+      });
       if (!success) {
         setError('Failed to create account.');
       } else {
@@ -63,20 +94,20 @@ export function AuthModal() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="relative w-full max-w-md bg-[#0B151F] border border-[#212A33] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+            className={`relative w-full ${isLogin ? 'max-w-md' : 'max-w-lg'} max-h-[90vh] bg-[#0B151F] border border-[#212A33] rounded-3xl shadow-2xl overflow-y-auto flex flex-col`}
           >
 
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-[#8F9AA4] hover:text-[#F6F9FC] transition-colors p-1"
+              className="absolute top-4 right-4 text-[#8F9AA4] hover:text-[#F6F9FC] transition-colors p-1 z-10"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Content */}
             <div className="p-8">
-              <div className="text-center mb-8">
+              <div className="text-center mb-6">
                 <h2 className="font-display text-2xl font-bold text-[#F6F9FC] mb-2">
                   {isLogin ? 'Log in' : 'Create an account'}
                 </h2>
@@ -110,26 +141,53 @@ export function AuthModal() {
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
+                      placeholder="e.g. janedoe"
+                      className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
                       required
                     />
                   </div>
                 </div>
 
                 {!isLogin && (
-                  <div>
-                    <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Your email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
-                        required
-                      />
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">First Name</label>
+                        <input
+                          type="text"
+                          value={fname}
+                          onChange={(e) => setFname(e.target.value)}
+                          placeholder="Jane"
+                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Last Name</label>
+                        <input
+                          type="text"
+                          value={lname}
+                          onChange={(e) => setLname(e.target.value)}
+                          placeholder="Doe"
+                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                        />
+                      </div>
                     </div>
-                  </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Your email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="jane@email.com"
+                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </>
                 )}
 
                 <div>
@@ -147,11 +205,109 @@ export function AuthModal() {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors"
+                      placeholder="••••••••"
+                      className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
                       required
                     />
                   </div>
                 </div>
+
+                {!isLogin && (
+                  <div className="pt-3 border-t border-[#212A33] space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#68E371] uppercase tracking-wider">
+                        Address Details
+                      </span>
+                      <span className="text-[11px] text-[#5A6E85]">Used for faster checkout</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Street Address</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                        <input
+                          type="text"
+                          value={street}
+                          onChange={(e) => setStreet(e.target.value)}
+                          placeholder="40 Bay Street"
+                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">City</label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                          <input
+                            type="text"
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            placeholder="Toronto"
+                            className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Province / State</label>
+                        <div className="relative">
+                          <Map className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                          <input
+                            type="text"
+                            value={province}
+                            onChange={(e) => setProvince(e.target.value)}
+                            placeholder="Ontario"
+                            className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Country</label>
+                        <div className="relative">
+                          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                          <input
+                            type="text"
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                            placeholder="Canada"
+                            className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">ZIP / Postal Code</label>
+                        <div className="relative">
+                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                          <input
+                            type="text"
+                            value={zip}
+                            onChange={(e) => setZip(e.target.value)}
+                            placeholder="M5J 3A5"
+                            className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-[#8F9AA4] mb-1.5">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5A6E85]" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="416-555-5555"
+                          className="w-full bg-[#14202D] border border-[#212A33] text-[#F6F9FC] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-[#68E371] transition-colors placeholder-[#304050]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <button
                   type="submit"
