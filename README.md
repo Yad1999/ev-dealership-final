@@ -75,8 +75,8 @@ npm install
 Create a `.env` file in the root directory (or use the provided defaults):
 
 ```env
-# Backend API Base URL
-VITE_API_URL=http://evsystem-backend-env.eba-vpyzicjy.us-east-1.elasticbeanstalk.com
+# Backend API Base URL (e.g., http://localhost:5000 or your cloud backend URL)
+VITE_API_URL=your_backend_api_url
 
 # Open Charge Map API Key
 VITE_OPENCHARGEMAP_API_KEY=your_openchargemap_api_key
