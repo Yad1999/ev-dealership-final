@@ -1,4 +1,4 @@
-# BatteriVolt — Next-Gen Electric Vehicle Dealership
+# BatteriVolt — Group L - Next-Gen Electric Vehicle Dealership
 
 **Course:** EECS 4413 — E-Commerce Systems  
 **Deliverable:** Deliverable 3 (Full Client-Side Implementation, Cloud-Native Deployment & Chatbot)  
